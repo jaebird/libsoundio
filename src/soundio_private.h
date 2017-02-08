@@ -36,6 +36,7 @@
 #include "android.h"
 #endif
 
+#include "remote.h"
 #include "dummy.h"
 
 union SoundIoBackendData {
@@ -57,6 +58,7 @@ union SoundIoBackendData {
 #ifdef SOUNDIO_HAVE_ANDROID
     struct SoundIoAndroid android;
 #endif
+    struct SoundIoRemote remote;
     struct SoundIoDummy dummy;
 };
 
@@ -76,6 +78,7 @@ union SoundIoDeviceBackendData {
 #ifdef SOUNDIO_HAVE_WASAPI
     struct SoundIoDeviceWasapi wasapi;
 #endif
+    struct SoundIoRemote remote;
     struct SoundIoDeviceDummy dummy;
 };
 
@@ -98,6 +101,7 @@ union SoundIoOutStreamBackendData {
 #ifdef SOUNDIO_HAVE_ANDROID
     struct SoundIoOutStreamAndroid android;
 #endif
+    struct SoundIoOutStreamRemote remote;
     struct SoundIoOutStreamDummy dummy;
 };
 
@@ -120,6 +124,7 @@ union SoundIoInStreamBackendData {
 #ifdef SOUNDIO_HAVE_ANDROID
     struct SoundIoInStreamAndroid android;
 #endif
+    struct SoundIoInStreamRemote remote;
     struct SoundIoInStreamDummy dummy;
 };
 

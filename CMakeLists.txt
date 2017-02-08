@@ -160,6 +160,7 @@ set(LIBSOUNDIO_SOURCES
     "${libsoundio_SOURCE_DIR}/src/soundio.c"
     "${libsoundio_SOURCE_DIR}/src/util.c"
     "${libsoundio_SOURCE_DIR}/src/os.c"
+    "${libsoundio_SOURCE_DIR}/src/remote.c"
     "${libsoundio_SOURCE_DIR}/src/dummy.c"
     "${libsoundio_SOURCE_DIR}/src/channel_layout.c"
     "${libsoundio_SOURCE_DIR}/src/ring_buffer.c"

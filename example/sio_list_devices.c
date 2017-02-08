@@ -17,7 +17,7 @@ static int usage(char *exe) {
     fprintf(stderr, "Usage: %s [options]\n"
             "Options:\n"
             "  [--watch]\n"
-            "  [--backend dummy|alsa|pulseaudio|jack|coreaudio|wasapi]\n"
+            "  [--backend dummy|remote|alsa|pulseaudio|jack|coreaudio|wasapi]\n"
             "  [--short]\n", exe);
     return 1;
 }
@@ -131,6 +131,8 @@ int main(int argc, char **argv) {
             } else if (strcmp(arg, "--backend") == 0) {
                 if (strcmp("dummy", argv[i]) == 0) {
                     backend = SoundIoBackendDummy;
+                } else if (strcmp("remote", argv[i]) == 0) {
+                    backend = SoundIoBackendRemote;
                 } else if (strcmp("alsa", argv[i]) == 0) {
                     backend = SoundIoBackendAlsa;
                 } else if (strcmp("pulseaudio", argv[i]) == 0) {

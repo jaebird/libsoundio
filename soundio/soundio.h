@@ -223,6 +223,7 @@ enum SoundIoBackend {
     SoundIoBackendCoreAudio,
     SoundIoBackendWasapi,
     SoundIoBackendAndroid,
+    SoundIoBackendRemote,
     SoundIoBackendDummy,
 };
 

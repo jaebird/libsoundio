@@ -33,6 +33,7 @@ static const enum SoundIoBackend available_backends[] = {
 #ifdef SOUNDIO_HAVE_ANDROID
     SoundIoBackendAndroid,
 #endif
+    SoundIoBackendRemote,
     SoundIoBackendDummy,
 };
 
@@ -75,7 +76,7 @@ static backend_init_t backend_init_fns[] = {
 #else
     NULL,
 #endif
-
+    &soundio_remote_init,
     &soundio_dummy_init,
 };
 
@@ -175,6 +176,7 @@ const char *soundio_backend_name(enum SoundIoBackend backend) {
         case SoundIoBackendCoreAudio: return "CoreAudio";
         case SoundIoBackendWasapi: return "WASAPI";
         case SoundIoBackendAndroid: return "Android OpenSL ES";
+        case SoundIoBackendRemote: return "Remote";
         case SoundIoBackendDummy: return "Dummy";
     }
     return "(invalid backend)";
