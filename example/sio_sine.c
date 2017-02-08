@@ -125,6 +125,8 @@ int main(int argc, char **argv) {
                 } else if (strcmp(arg, "--backend") == 0) {
                     if (strcmp(argv[i], "dummy") == 0) {
                         backend = SoundIoBackendDummy;
+                    } else if (strcmp(argv[i], "remote") == 0) {
+                        backend = SoundIoBackendRemote;
                     } else if (strcmp(argv[i], "alsa") == 0) {
                         backend = SoundIoBackendAlsa;
                     } else if (strcmp(argv[i], "pulseaudio") == 0) {

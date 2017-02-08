@@ -11,6 +11,29 @@
 
 #include <stdio.h>
 #include <string.h>
+#include <time.h>
+
+// TODO: not windows portable yet
+#include <sys/socket.h>
+//#include <netinet/in.h> 
+#include <arpa/inet.h>
+//#include <sys/ioctl.h>
+
+#define SERVER_IP "127.0.0.1"
+//#define SERVER_IP "192.168.56.102"
+#define BUFLEN 512  //Max length of buffer
+#define PORT 8888   //The port on which to send data
+
+struct sockaddr_in si_me;
+struct sockaddr_in si_other;
+int sock = 0;
+time_t last_recv_time = 0;
+
+static void die(char *s)
+{
+    perror(s);
+//    exit(1);
+}
 
 static void playback_thread_run(void *arg) {
     struct SoundIoOutStreamPrivate *os = (struct SoundIoOutStreamPrivate *)arg;
@@ -25,6 +48,8 @@ static void playback_thread_run(void *arg) {
         outstream->write_callback(outstream, 0, free_frames);
     double start_time = soundio_os_get_time();
     long frames_consumed = 0;
+
+    char buf[BUFLEN];
 
     while (SOUNDIO_ATOMIC_FLAG_TEST_AND_SET(osd->abort_flag)) {
         double now = soundio_os_get_time();
@@ -57,6 +82,16 @@ static void playback_thread_run(void *arg) {
         int free_frames = free_bytes / outstream->bytes_per_frame;
 
         double total_time = soundio_os_get_time() - start_time;
+
+
+        if (difftime( time(NULL), last_recv_time) < 5.0) {
+	        unsigned int slen = sizeof(si_other);
+          sprintf(buf, "Time: %f", total_time);
+          if (sendto(sock, buf, strlen(buf), 0, (struct sockaddr*) &si_other, slen) == -1) {
+              die("sendto()");
+          }
+        }
+
         long total_frames = total_time * outstream->sample_rate;
         int frames_to_kill = total_frames - frames_consumed;
         int read_count = soundio_int_min(frames_to_kill, fill_frames);
@@ -204,6 +239,7 @@ static enum SoundIoError outstream_open_remote(struct SoundIoPrivate *si, struct
         return SoundIoErrorNoMem;
     }
 
+
     return 0;
 }
 
@@ -319,6 +355,7 @@ static enum SoundIoError instream_open_remote(struct SoundIoPrivate *si, struct 
         return SoundIoErrorNoMem;
     }
 
+
     return 0;
 }
 
@@ -428,6 +465,46 @@ static enum SoundIoError set_all_device_channel_layouts(struct SoundIoDevice *de
     return 0;
 }
 
+
+static void socket_input_thread(void *arg) {
+    printf("input thread\n");
+
+    //int i;
+    unsigned int slen = sizeof(si_other);
+    int recv_len;
+    char buf[BUFLEN];
+
+    //keep listening for data
+    while(1)
+    {
+//        printf("Waiting for data...");
+//        fflush(stdout);
+         
+        //try to receive some data, this is a blocking call
+        if ((recv_len = recvfrom(sock, buf, BUFLEN, 0, (struct sockaddr *) &si_other, &slen)) == -1)
+        {
+            die("recvfrom()");
+        }
+
+        
+        
+        char str[INET6_ADDRSTRLEN];
+        //print details of the client/peer and the data received
+        inet_ntop(AF_INET, &(si_other.sin_addr), str, INET_ADDRSTRLEN);
+
+        printf("Received packet from %s:%d  Data:%s\n", str, ntohs(si_other.sin_port), buf);
+//        printf("Data: %s\n" , buf);
+         
+        //now reply the client with the same data
+//        if (sendto(sock, buf, recv_len, 0, (struct sockaddr*) &si_other, slen) == -1)
+//      {
+//            die("sendto()");
+//        }
+        last_recv_time = time(NULL);
+    }
+}
+
+// init the remote
 enum SoundIoError soundio_remote_init(struct SoundIoPrivate *si) {
     struct SoundIo *soundio = &si->pub;
     struct SoundIoRemote *sid = &si->backend_data.remote;
@@ -453,6 +530,48 @@ enum SoundIoError soundio_remote_init(struct SoundIoPrivate *si) {
 
     si->safe_devices_info->default_input_index = 0;
     si->safe_devices_info->default_output_index = 0;
+
+    // create network socket
+
+    // open socket
+
+
+    //create a UDP socket
+    if ((sock=socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)) == -1)
+    {
+        die("socket");
+    }
+     
+    // zero out the structure
+    memset((char *) &si_me, 0, sizeof(si_me));
+     
+    si_me.sin_family = AF_INET;
+    si_me.sin_port = htons(PORT);
+
+    //si_me.sin_addr.s_addr = htonl(INADDR_ANY);
+
+    if (inet_pton(AF_INET, SERVER_IP, &si_me.sin_addr) == 0) 
+    {
+        die("inet_pton() failed");
+    }
+
+    //bind socket to port
+    if( bind(sock, (struct sockaddr*)&si_me, sizeof(si_me) ) == -1)
+    {
+        die("bind");
+    } else {
+      printf("socket created\n");
+    }
+
+    struct SoundIoOsThread *thread;
+    int err;
+
+    if ((err = soundio_os_thread_create(socket_input_thread, NULL, soundio, &thread))) {
+        return err;
+    }
+
+
+
 
     // create output device
     {
