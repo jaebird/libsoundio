@@ -1,6 +1,11 @@
 /*
-    Simple udp client
+    Simple UDP client for libsoundio remote testing
+
+Run with mplayer over STDIN as follows:
+    $ ./client | mplayer -demuxer rawaudio -rawaudio channels=2:rate=48000:samplesize=2 -cache 512 -
+
 */
+
 #include<stdio.h> //printf
 #include<string.h> //memset
 #include<stdlib.h> //exit(0);
@@ -10,8 +15,8 @@
 #include <unistd.h>
  
 #define SERVER "127.0.0.1"
-//#define SERVER "192.168.56.102"
-#define BUFLEN 512  //Max length of buffer
+//#define SERVER "192.168.5.30"
+#define BUFLEN 1400  //Max length of buffer
 #define PORT 8888   //The port on which to send data
  
 void die(char *s)
@@ -45,37 +50,33 @@ int main(void)
  
     while(1)
     {
-        //printf("Enter message : ");
-        //gets(message);
         sprintf(message, "PING");
-        puts("PING");
-         
-        //send the message
+        //puts("PING");
+
+        // TODO: this doesn't need to happen every loop, every few seconds is fine
         if (sendto(the_socket, message, strlen(message) , 0 , (struct sockaddr *) &si_other, slen)==-1)
         {
             die("sendto()");
         }
 
-      uint len = 0;
+        uint len = 0;
 
-      // check for existing data on the socket
-      ioctl(the_socket, FIONREAD, &len);
+        // check for existing data on the socket
+        ioctl(the_socket, FIONREAD, &len);
 
-      if (len > 0) {
-        //receive a reply and print it
-        //clear the buffer by filling null, it might have previously received data
-        memset(buf,'\0', BUFLEN);
-        //try to receive some data, this is a blocking call
-        if (recvfrom(the_socket, buf, BUFLEN, 0, (struct sockaddr *) &si_other, &slen) == -1)
-        {
-            die("recvfrom()");
+        if (len > 0) {
+            //try to receive some data, this is a blocking call
+            int sizeR = recvfrom(the_socket, buf, BUFLEN, 0, (struct sockaddr *) &si_other, &slen);
+            if (sizeR == -1)
+            {
+                die("recvfrom()");
+            }
+            write(STDOUT_FILENO, buf , sizeR);
+
+        } else {
+            // sleep for 500 milliSeconds
+            usleep(pollingDelay*1000);
         }
-         
-        puts(buf);
-      } else {
-        usleep(pollingDelay*1000);  /* sleep for 100 milliSeconds */
-      }
-
     }
  
     close(the_socket);
